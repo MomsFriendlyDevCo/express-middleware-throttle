@@ -34,30 +34,34 @@ var middleware = function(options) {
 	var throttler = new Throttle(settings);
 	throttler.init();
 
-	return (req, res, next) => throttler.throttle({
-		// TODO: Name throttle id by some request attribute?
-		id: 'middleware',
-		hash: ({path: req.path, query: req.query, params: req.params}),
-		onLocked: () => {
+	return (req, res, next) => throttler.throttle(
+		// Worker
+		() => {
+			return new Promise((resolve, reject) => {
+				debug('onUnlocked');
+				var oldResEnd = res.end; // Replace res.end with our own handler
+				res.end = (...args) => {
+					oldResEnd(...args); // Let Express handle the usual end output
+
+					setTimeout(()=> { // Cue up timer to execute after wait
+						resolve();
+					}, settings.wait);
+				};
+
+				// Call next item in middleware which (should) eventually call res.end() which gets duck-typed above
+				next();
+			});
+		}, {
+			// TODO: Name throttle id by some request attribute?
+			id: 'middleware',
+			hash: ({path: req.path, query: req.query, params: req.params}),
+		})
+		.catch(() => {
 			debug('onLocked');
 			// FIXME: sendStatus is bespoke and not express core?
+			// FIXME: Send "Too many connections" instead?
 			res.sendStatus(200);
-		},
-		onUnlocked: (done) => {
-			debug('onUnlocked');
-			var oldResEnd = res.end; // Replace res.end with our own handler
-			res.end = (...args) => {
-				oldResEnd(...args); // Let Express handle the usual end output
-
-				setTimeout(()=> { // Cue up timer to execute after wait
-					done();
-				}, settings.wait);
-			};
-
-			// Call next item in middleware which (should) eventually call res.end() which gets duck-typed above
-			next();
-		},
-	});
+		});
 };
 
 module.exports = middleware;
