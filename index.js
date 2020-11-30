@@ -1,3 +1,4 @@
+var _ = require('lodash');
 var debug = require('debug')('emt:main');
 var Throttle = require('@momsfriendlydevco/throttle');
 //var timestring = require('timestring');
