@@ -27,7 +27,7 @@
     "mocha-logger": "^1.0.6"
   },
   "dependencies": {
-    "@momsfriendlydevco/throttle": "^0.0.1",
+    "@momsfriendlydevco/throttle": "^0.0.4",
     "debug": "^4.3.1",
     "lodash": "^4.17.20"
   }
